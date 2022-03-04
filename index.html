@@ -365,29 +365,42 @@
   <h3>Termwork 9</h3>
   <pre>
     #include &lt;stdio.h&gt;
-    #include &lt;stdlib.h&gt;
     #include &lt;unistd.h&gt;
-    #include &lt;errno.h&gt;
-    #include &lt;sys/types.h&gt;
+    #include &lt;signal.h&gt;
     #include &lt;sys/wait.h&gt;
-    void sys(const char *cmdstr)
+    #include &lt;stdlib.h&gt;
+    #include &lt;errno.h&gt;
+    int system(const char *cmdstr)
     {
-      int pid;
-      pid = fork();
+      pid_t pid;
+      int status;
+      if (cmdstr == NULL)
+        return (1);
+      if ((pid = fork()) < 0)
+        status = -1;
       if (pid == 0)
-        execl("/bin/bash", "bash", "-c", cmdstr, NULL);
-      else
-        waitpid(pid, NULL, 0);
-    }
-    int main(int argc, char *argv[])
-    {
-      int i;
-      for (i = 1; i < argc; i++)
       {
-        sys(argv[i]);
-        printf("\n");
+        execl("/bin/sh", "sh", "-c", cmdstr, (char *)0);
+        _exit(127);
       }
-      _exit(0);
+      else
+      {
+        while (waitpid(pid, &status, 0) < 0)
+        {
+          if (errno != EINTR)
+            status -= 1;
+          break;
+        }
+        return 0;
+      }
+      return (status);
+    }
+    int main()
+    {
+      int status;
+      if ((status = system("date")) < 0)
+        printf("system() errror");
+      exit(0);
     }
   </pre>
 
